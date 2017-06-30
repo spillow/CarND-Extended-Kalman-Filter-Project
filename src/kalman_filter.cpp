@@ -1,4 +1,5 @@
 #include "kalman_filter.h"
+#include <iostream>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -22,6 +23,8 @@ void KalmanFilter::Predict() {
   TODO:
     * predict the state
   */
+  x_ = F_ * x_;
+  P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
@@ -29,6 +32,19 @@ void KalmanFilter::Update(const VectorXd &z) {
   TODO:
     * update the state by using Kalman Filter equations
   */
+  auto Ht = H_.transpose();
+
+  // Normal linear transformation for lidar
+  auto y = z - H_ * x_;
+
+  auto S = H_ * P_ * Ht + R_;
+  auto K = P_ * Ht * S.inverse();
+
+  long x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  x_ = x_ * K * y;
+
+  P_ = (I - K * H_) * P_;
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
@@ -36,4 +52,58 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   TODO:
     * update the state by using Extended Kalman Filter equations
   */
+
+  auto h = [](const VectorXd &x)
+  {
+    float px = x(0);
+    float py = x(1);
+    float vx = x(2);
+    float vy = x(3);
+
+    float denom = sqrt(px*px + py*py);
+
+    if (fabs(denom) < 0.0001)
+    {
+      std::cout << "h() - Division by Zero" << std::endl;
+      return VectorXd(3, 1);
+    }
+
+    VectorXd polar = VectorXd(3, 1);
+    polar << denom,
+             atan2(py, px),
+             (px*vx + py*vy) / denom;
+
+    return polar;
+  };
+
+  auto normalize = [](float angle)
+  {
+    int k = (int)(angle / M_2_PI);
+    float shift = angle - (float)k * M_2_PI;
+
+    if (shift > M_PI)
+      shift -= M_2_PI;
+    else if (shift < -M_PI)
+      shift += M_2_PI;
+
+    return shift;
+  };
+
+  auto Ht = H_.transpose();
+
+  // Use non-linear mapping to measurement space for radar.
+  auto init = z - h(x_);
+  VectorXd y(3);
+  y(0) = init(0);
+  y(1) = normalize(init(1));
+  y(2) = init(2);
+
+  auto S = H_ * P_ * Ht + R_;
+  auto K = P_ * Ht * S.inverse();
+
+  long x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  x_ = x_ * K * y;
+
+  P_ = (I - K * H_) * P_;
 }
