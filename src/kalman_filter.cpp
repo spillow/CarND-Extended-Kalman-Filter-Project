@@ -35,30 +35,16 @@ void KalmanFilter::Update(const VectorXd &z) {
   MatrixXd Ht = H_.transpose();
 
   // Normal linear transformation for lidar
-  std::cout << "H = " << H_ << std::endl;
-  std::cout << "z = " << z << std::endl;
   VectorXd y = z - H_ * x_;
-  std::cout << "y = " << y << std::endl;
-  std::cout << "y = " << y << std::endl;
-  std::cout << "y = " << y << std::endl;
-
-  std::cout << "bang1" << std::endl;
 
   MatrixXd S = H_ * P_ * Ht + R_;
-  std::cout << "bang2" << std::endl;
   MatrixXd K = P_ * Ht * S.inverse();
-  std::cout << "bang3" << std::endl;
 
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
-  std::cout << "x = " << x_ << std::endl;
-  std::cout << "K = " << K << std::endl;
-  std::cout << "y = " << y << std::endl;
   x_ = x_ + K * y;
-  std::cout << "bang4" << std::endl;
 
   P_ = (I - K * H_) * P_;
-  std::cout << "bang5" << std::endl;
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
