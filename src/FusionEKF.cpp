@@ -52,7 +52,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   long long prevTime = previous_timestamp_;
 
   previous_timestamp_ = currTime;
-  auto &measures = measurement_pack.raw_measurements_;
+  VectorXd measures = measurement_pack.raw_measurements_;
 
   /*****************************************************************************
    *  Initialization
@@ -125,7 +125,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
               dt3/2*noise_ax, 0, dt2*noise_ax, 0,
               0, dt3/2*noise_ay, 0, dt2*noise_ay;
 
+  std::cout << "Debug: here!" << std::endl;
+
   ekf_.Predict();
+
+  std::cout << "Debug: here1!" << std::endl;
 
   /*****************************************************************************
    *  Update
@@ -141,12 +145,16 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     // Radar updates
     ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
     ekf_.R_ = R_radar_;
+    std::cout << "Debug: here2*!" << std::endl;
     ekf_.UpdateEKF(measures);
+    std::cout << "Debug: here2!" << std::endl;
   } else {
     // Laser updates
     ekf_.H_ = H_laser_;
     ekf_.R_ = R_laser_;
+    std::cout << "Debug: here3*!" << std::endl;
     ekf_.Update(measures);
+    std::cout << "Debug: here3!" << std::endl;
   }
 
   // print the output
